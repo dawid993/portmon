@@ -10,15 +10,22 @@ analyze_thread_int = 20
 db_filename = "portmon.db"
 db_table_name = "syn_packets"
 
+no_flags = 0x00
+fin_flag = 0x01
+syn_flag = 0x02
+xmas_flags = 0x29 # FIN (0x01) + PSH (0x08) + URG (0x20)
+
+scan_flags = [no_flags, fin_flag, syn_flag, xmas_flags]
 
 def handle_packet(packet):
-    if packet.haslayer(TCP) and packet[TCP].flags == "S":
+    if packet.haslayer(TCP) and packet[TCP].flags in scan_flags:
         packet_tcp = packet[TCP]
         packet_ip = packet[IP]
         try:
             traffic_queue.put_nowait(
                 (time.time(), packet_ip.src, packet_ip.dst, packet_tcp.dport)
             )
+            print(f"Traffic detected from {packet_ip.src}/{packet_tcp.sport} {packet_tcp.flags} {packet_ip.dst}/{packet_tcp.dport}")
         except queue.Full:
             print("Queue is full. Cannot add new traffic packet")
 
@@ -59,7 +66,7 @@ def save(rows, connection):
 def analyze_traffic_from_db(connection):
     burst_records = fetch_from_db(connection, 5 * 60, 10)
     complementary_records = fetch_from_db(connection, 24 * 60 * 60, 20)
-    
+
     print(burst_records)
     print(complementary_records)
 
