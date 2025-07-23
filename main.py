@@ -45,7 +45,7 @@ def analyze_packets():
 
             elems_count += 1
 
-        save(packets, analyze_connection)
+        save(connection=analyze_connection, rows=packets)
         analyze_traffic_from_db(analyze_connection)
         time.sleep(analyze_thread_int)
 
